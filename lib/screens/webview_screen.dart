@@ -148,30 +148,6 @@ class _WebViewScreenState extends State<WebViewScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1A3A52),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          title: Text(
-            widget.title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            if (!_hasError && !_isLoading)
-              IconButton(
-                icon: const Icon(Icons.refresh, size: 24),
-                onPressed: _retry,
-                tooltip: 'Refresh',
-              ),
-          ],
-        ),
         body: _hasError ? _buildErrorScreen() : _buildWebView(),
       ),
     );
