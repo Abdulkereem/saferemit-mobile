@@ -76,11 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo or Icon
-            Icon(
-              Icons.account_balance_wallet,
-              size: 100,
-              color: Theme.of(context).primaryColor,
+            // Logo
+            Image.asset(
+              'assets/images/logo.png',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
             ),
 
             const SizedBox(height: 32),
