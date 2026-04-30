@@ -1,0 +1,54 @@
+name: Build Flutter APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: saferemit-mobile-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Create Release Info
+        run: |
+          echo "✅ APK built successfully!" > release-info.txt
+          echo "Build Date: $(date)" >> release-info.txt
+          echo "Commit: ${{ github.sha }}" >> release-info.txt
+
+      - name: Upload Release Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-info
+          path: release-info.txt
