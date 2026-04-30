@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -17,24 +19,50 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-class _WebViewScreenState extends State<WebViewScreen> {
+class _WebViewScreenState extends State<WebViewScreen>
+    with SingleTickerProviderStateMixin {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    _setupAnimation();
     _initializeWebView();
   }
 
+  void _setupAnimation() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
   void _initializeWebView() {
-    _controller = WebViewController()
+    late final PlatformWebViewControllerCreationParams params;
+
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      params = AndroidWebViewControllerCreationParams();
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
+    }
+
+    _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
-      ..clearCache()
-      ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -57,28 +85,39 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onWebResourceError: (WebResourceError error) {
             print('WebView Error: ${error.errorCode} - ${error.description}');
 
-            // Only show error for critical failures
-            if (error.errorType == WebResourceErrorType.hostLookup ||
-                error.errorType == WebResourceErrorType.connect ||
-                error.errorType == WebResourceErrorType.timeout) {
+            // Only show error for main frame failures
+            if (error.isForMainFrame ?? false) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
                 _errorMessage =
-                    'Unable to connect. Please check your internet connection.';
+                    'Unable to load page. Please check your internet connection.';
               });
             }
           },
         ),
       );
 
-    // Load URL with cache-busting headers
+    // Platform-specific configuration
+    if (_controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(false);
+      (_controller.platform as AndroidWebViewController)
+        ..setMediaPlaybackRequiresUserGesture(false)
+        ..setGeolocationPermissionsPromptCallbacks(
+          onShowPrompt: (request) async {
+            return GeolocationPermissionsResponse(
+              allow: true,
+              retain: true,
+            );
+          },
+        );
+    }
+
+    // Load URL
     _controller.loadRequest(
       Uri.parse(widget.url),
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'no-cache',
       },
     );
   }
@@ -88,24 +127,53 @@ class _WebViewScreenState extends State<WebViewScreen> {
       _hasError = false;
       _isLoading = true;
     });
-    _initializeWebView();
+    _controller.reload();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          if (!_hasError)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _retry,
-              tooltip: 'Refresh',
+    return WillPopScope(
+      onWillPop: () async {
+        if (await _controller.canGoBack()) {
+          _controller.goBack();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1A3A52),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
-        ],
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          actions: [
+            if (!_hasError && !_isLoading)
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 24),
+                onPressed: _retry,
+                tooltip: 'Refresh',
+              ),
+          ],
+        ),
+        body: _hasError ? _buildErrorScreen() : _buildWebView(),
       ),
-      body: _hasError ? _buildErrorScreen() : _buildWebView(),
     );
   }
 
@@ -113,24 +181,54 @@ class _WebViewScreenState extends State<WebViewScreen> {
     return Stack(
       children: [
         WebViewWidget(controller: _controller),
-        if (_isLoading)
-          Container(
-            color: Colors.white,
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Loading...',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
+        if (_isLoading) _buildLoadingOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated Logo
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
               ),
             ),
-          ),
-      ],
+            const SizedBox(height: 32),
+
+            // Loading indicator
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3A52)),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Loading text
+            const Text(
+              'Loading...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color(0xFF8B8680),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -143,12 +241,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Error icon
               Icon(
                 Icons.wifi_off_rounded,
                 size: 100,
                 color: Colors.grey[400],
               ),
+
               const SizedBox(height: 32),
+
+              // Error title
               Text(
                 'Connection Error',
                 style: TextStyle(
@@ -158,7 +260,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+
               const SizedBox(height: 16),
+
+              // Error message
               Text(
                 _errorMessage,
                 style: TextStyle(
@@ -167,7 +272,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+
               const SizedBox(height: 48),
+
+              // Retry button
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -187,7 +295,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // Go back button
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();

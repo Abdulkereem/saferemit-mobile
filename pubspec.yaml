@@ -37,6 +37,8 @@ dependencies:
   
   # WebView for authentication pages
   webview_flutter: ^4.10.0
+  webview_flutter_android: ^3.16.0
+  webview_flutter_wkwebview: ^3.15.0
   
   # Onboarding slider
   smooth_page_indicator: ^1.2.0+3
