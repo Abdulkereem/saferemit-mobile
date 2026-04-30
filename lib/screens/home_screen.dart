@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'webview_screen.dart';
 import 'dart:math' as math;
 
@@ -402,6 +403,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final double x = radius * math.cos(angle);
     final double y = radius * math.sin(angle);
 
+    // Map index to Font Awesome icon
+    IconData iconData;
+    switch (index) {
+      case 0:
+        iconData = FontAwesomeIcons.bitcoin; // Bitcoin
+        break;
+      case 1:
+        iconData = FontAwesomeIcons.ethereum; // Ethereum
+        break;
+      case 2:
+        iconData = FontAwesomeIcons.dollarSign; // USDT
+        break;
+      case 3:
+        iconData = FontAwesomeIcons.amazon; // Amazon
+        break;
+      case 4:
+        iconData = FontAwesomeIcons.apple; // Apple/iTunes
+        break;
+      case 5:
+        iconData = FontAwesomeIcons.steam; // Steam
+        break;
+      default:
+        iconData = FontAwesomeIcons.gift;
+    }
+
     return Transform.translate(
       offset: Offset(x, y),
       child: Container(
@@ -419,13 +445,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
         child: Center(
-          child: Text(
-            icon,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          child: FaIcon(
+            iconData,
+            size: 24,
+            color: color,
           ),
         ),
       ),
