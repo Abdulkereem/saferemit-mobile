@@ -53,7 +53,7 @@ dependencies:
   url_launcher: ^6.3.1
   
   # Font Awesome icons
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^10.6.0
 
 dev_dependencies:
   flutter_test:
