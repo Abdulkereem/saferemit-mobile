@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'dart:io';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -27,33 +26,15 @@ class _WebViewScreenState extends State<WebViewScreen> {
   @override
   void initState() {
     super.initState();
-    _checkInternetAndLoad();
-  }
-
-  Future<void> _checkInternetAndLoad() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Check internet connectivity
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        _initializeWebView();
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = 'No internet connection';
-      });
-    }
+    _initializeWebView();
   }
 
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.white)
+      ..clearCache()
+      ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -68,36 +49,46 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
 
             // Check if user successfully logged in or registered
-            // If URL contains /dashboard, it means auth was successful
             if (url.contains('/dashboard')) {
               widget.onAuthSuccess?.call();
               Navigator.of(context).pop();
             }
           },
           onWebResourceError: (WebResourceError error) {
-            // Handle network errors
-            if (error.errorCode == -2 || // ERR_CACHE_MISS
-                error.errorCode == -6 || // ERR_CONNECTION_REFUSED
-                error.errorCode == -7 || // ERR_CONNECTION_TIMED_OUT
-                error.errorCode == -105) {
-              // ERR_NAME_NOT_RESOLVED
+            print('WebView Error: ${error.errorCode} - ${error.description}');
+
+            // Only show error for critical failures
+            if (error.errorType == WebResourceErrorType.hostLookup ||
+                error.errorType == WebResourceErrorType.connect ||
+                error.errorType == WebResourceErrorType.timeout) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
                 _errorMessage =
                     'Unable to connect. Please check your internet connection.';
               });
-            } else {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-                _errorMessage = 'Something went wrong. Please try again.';
-              });
             }
           },
         ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
+      );
+
+    // Load URL with cache-busting headers
+    _controller.loadRequest(
+      Uri.parse(widget.url),
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    );
+  }
+
+  void _retry() {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
+    _initializeWebView();
   }
 
   @override
@@ -109,9 +100,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
           if (!_hasError)
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () {
-                _checkInternetAndLoad();
-              },
+              onPressed: _retry,
               tooltip: 'Refresh',
             ),
         ],
@@ -154,16 +143,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Error icon
               Icon(
                 Icons.wifi_off_rounded,
                 size: 100,
                 color: Colors.grey[400],
               ),
-
               const SizedBox(height: 32),
-
-              // Error title
               Text(
                 'Connection Error',
                 style: TextStyle(
@@ -173,10 +158,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 16),
-
-              // Error message
               Text(
                 _errorMessage,
                 style: TextStyle(
@@ -185,15 +167,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 48),
-
-              // Retry button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: _checkInternetAndLoad,
+                  onPressed: _retry,
                   icon: const Icon(Icons.refresh),
                   label: const Text(
                     'Try Again',
@@ -208,10 +187,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Go back button
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
