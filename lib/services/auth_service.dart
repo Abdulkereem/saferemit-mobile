@@ -7,9 +7,6 @@ class AuthService {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    // Web Client ID for backend token verification
-    serverClientId:
-        '400743682454-44mopbbkc524e8s45ps4tik0nj7qa0mk.apps.googleusercontent.com',
   );
 
   // Google Sign In
@@ -26,6 +23,14 @@ class AuthService {
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
+      if (googleAuth.idToken == null) {
+        return {
+          'success': false,
+          'message':
+              'Failed to get ID token. Please check Google Sign-In configuration.'
+        };
+      }
+
       // Send token to backend
       final response = await http.post(
         Uri.parse('$baseUrl/api/auth/google'),
@@ -41,18 +46,19 @@ class AuthService {
         return {
           'success': true,
           'user': data['user'],
-          'session_cookie': response.headers['set-cookie'],
+          'token': data['token'] ?? '',
         };
       } else {
+        final errorData = jsonDecode(response.body);
         return {
           'success': false,
-          'message': 'Authentication failed',
+          'message': errorData['message'] ?? 'Authentication failed',
         };
       }
     } catch (error) {
       return {
         'success': false,
-        'message': 'Error: $error',
+        'message': 'Error: ${error.toString()}',
       };
     }
   }

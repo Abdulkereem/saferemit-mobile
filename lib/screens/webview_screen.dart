@@ -104,9 +104,15 @@ class _WebViewScreenState extends State<WebViewScreen>
             ''');
 
             // Check if user successfully logged in or registered
-            if (url.contains('/dashboard')) {
+            // Check for dashboard, home, or any success redirect
+            if (url.contains('/dashboard') ||
+                url.contains('/home') ||
+                url.contains('/wallet') ||
+                url.contains('/transactions')) {
               widget.onAuthSuccess?.call();
-              Navigator.of(context).pop();
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
             }
           },
           onWebResourceError: (WebResourceError error) {
