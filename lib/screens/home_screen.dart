@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'webview_screen.dart';
 import 'dart:math' as math;
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoggedIn = false;
   late AnimationController _orbitController;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -62,6 +64,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3A52)),
+        ),
+      ),
+    );
+
+    final result = await _authService.signInWithGoogle();
+
+    // Hide loading
+    if (mounted) Navigator.of(context).pop();
+
+    if (result['success']) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      setState(() {
+        _isLoggedIn = true;
+      });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Sign in failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -249,6 +286,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 60),
+
+              // Google Sign In button
+              TweenAnimationBuilder(
+                duration: const Duration(milliseconds: 900),
+                tween: Tween<double>(begin: 0, end: 1),
+                builder: (context, double value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 30 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: OutlinedButton.icon(
+                    onPressed: _signInWithGoogle,
+                    icon: Image.network(
+                      'https://www.google.com/favicon.ico',
+                      width: 24,
+                      height: 24,
+                    ),
+                    label: const Text(
+                      'Continue with Google',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1A3A52),
+                      side: const BorderSide(
+                        color: Color(0xFFE0E0E0),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
 
               // Sign In button with animation
               TweenAnimationBuilder(
