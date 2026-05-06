@@ -75,9 +75,14 @@ class _WebViewScreenState extends State<WebViewScreen>
           }
         },
       )
+      ..setOnConsoleMessage((message) {
+        // Log all console messages to see what's happening
+        debugPrint('WebView Console: ${message.message}');
+      })
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
+            debugPrint('🌐 WebView: Loading $url');
             if (mounted) {
               setState(() {
                 _isLoading = true;
@@ -86,6 +91,7 @@ class _WebViewScreenState extends State<WebViewScreen>
             }
           },
           onPageFinished: (String url) {
+            debugPrint('✅ WebView: Loaded $url');
             if (mounted) {
               setState(() {
                 _isLoading = false;
@@ -107,6 +113,8 @@ class _WebViewScreenState extends State<WebViewScreen>
             ''');
           },
           onWebResourceError: (WebResourceError error) {
+            debugPrint(
+                '❌ WebView Error: Code=${error.errorCode}, Desc=${error.description}, MainFrame=${error.isForMainFrame}');
             // Only handle MAIN FRAME errors (not images, scripts, etc.)
             if (error.isForMainFrame == true) {
               if (mounted) {
@@ -133,7 +141,8 @@ class _WebViewScreenState extends State<WebViewScreen>
 
     // Platform-specific configuration
     if (_controller.platform is AndroidWebViewController) {
-      AndroidWebViewController.enableDebugging(false);
+      // ENABLE debugging to see what's happening
+      AndroidWebViewController.enableDebugging(true);
       (_controller.platform as AndroidWebViewController)
         ..setMediaPlaybackRequiresUserGesture(false)
         ..setGeolocationPermissionsPromptCallbacks(
