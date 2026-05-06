@@ -244,7 +244,13 @@ class _WebViewScreenState extends State<WebViewScreen>
               )
             : Stack(
                 children: [
-                  WebViewWidget(controller: _controller),
+                  // Add padding to WebView for system navigation bar
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom,
+                    ),
+                    child: WebViewWidget(controller: _controller),
+                  ),
                   if (_isLoading) _buildLoadingOverlay(),
                 ],
               ),
