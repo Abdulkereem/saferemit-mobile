@@ -121,15 +121,68 @@ class _WebViewScreenState extends State<WebViewScreen>
             // The WebView IS the dashboard - user should see the full webapp
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView Error: ${error.errorCode} - ${error.description}');
+            // Intercept ALL errors and show custom Flutter error screen
+            // Never show browser error pages
 
-            // Only show error for main frame failures
+            // Only handle main frame errors (not images, scripts, etc.)
             if (error.isForMainFrame ?? false) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
-                _errorMessage =
-                    'Unable to load page. Please check your internet connection.';
+
+                // Categorize errors and show appropriate messages
+                if (error.errorCode == -2) {
+                  // ERR_INTERNET_DISCONNECTED
+                  _errorMessage =
+                      'No internet connection. Please check your network and try again.';
+                } else if (error.errorCode == -6) {
+                  // ERR_CONNECTION_REFUSED
+                  _errorMessage =
+                      'Unable to connect to SafeRemit. Please try again later.';
+                } else if (error.errorCode == -8) {
+                  // ERR_TIMED_OUT
+                  _errorMessage =
+                      'Connection timed out. Please check your internet and try again.';
+                } else if (error.errorCode == -105) {
+                  // ERR_NAME_NOT_RESOLVED
+                  _errorMessage =
+                      'Cannot reach SafeRemit servers. Please check your internet connection.';
+                } else if (error.errorCode >= 400 && error.errorCode < 500) {
+                  // Client errors (404, 403, etc.)
+                  _errorMessage =
+                      'Page not found. Please try again or contact support.';
+                } else if (error.errorCode >= 500) {
+                  // Server errors
+                  _errorMessage =
+                      'SafeRemit is temporarily unavailable. Please try again in a few moments.';
+                } else {
+                  // Generic error
+                  _errorMessage =
+                      'Something went wrong. Please check your connection and try again.';
+                }
+              });
+            }
+          },
+          onHttpError: (HttpResponseError error) {
+            // Handle HTTP errors (404, 500, etc.)
+            if (error.response?.statusCode != null) {
+              final statusCode = error.response!.statusCode!;
+
+              setState(() {
+                _isLoading = false;
+                _hasError = true;
+
+                if (statusCode >= 500) {
+                  _errorMessage =
+                      'SafeRemit is temporarily unavailable. Our team is working on it.';
+                } else if (statusCode == 404) {
+                  _errorMessage =
+                      'Page not found. Please go back and try again.';
+                } else if (statusCode == 403) {
+                  _errorMessage = 'Access denied. Please log in again.';
+                } else {
+                  _errorMessage = 'Unable to load page. Please try again.';
+                }
               });
             }
           },
@@ -150,6 +203,13 @@ class _WebViewScreenState extends State<WebViewScreen>
           },
         );
     }
+
+    // Suppress WebView's default error pages
+    // We handle all errors with custom Flutter screens
+    _controller.setOnConsoleMessage((message) {
+      // Optionally log console messages for debugging
+      // print('WebView Console: ${message.message}');
+    });
 
     // Load URL
     _controller.loadRequest(
@@ -303,84 +363,145 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   Widget _buildErrorScreen() {
     return Container(
-      color: Colors.white,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Error icon
-              Icon(
-                Icons.wifi_off_rounded,
-                size: 100,
-                color: Colors.grey[400],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Error title
-              Text(
-                'Connection Error',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFF5F3EE),
+            Colors.white,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated error icon
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 600),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.cloud_off_rounded,
+                          size: 60,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                textAlign: TextAlign.center,
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 40),
 
-              // Error message
-              Text(
-                _errorMessage,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 48),
-
-              // Retry button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _retry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text(
-                    'Try Again',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Error title
+                const Text(
+                  'Connection Problem',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A3A52),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A3A52),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Error message
+                Text(
+                  _errorMessage,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 48),
+
+                // Retry button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh_rounded, size: 24),
+                    label: const Text(
+                      'Try Again',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A3A52),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Go back button
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text(
-                  'Go Back',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                // Go back button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                    label: const Text(
+                      'Go Back',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1A3A52),
+                      side: const BorderSide(
+                        color: Color(0xFF1A3A52),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 32),
+
+                // Help text
+                Text(
+                  'If the problem persists, please contact support',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
