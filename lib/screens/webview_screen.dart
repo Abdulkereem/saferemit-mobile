@@ -76,6 +76,18 @@ class _WebViewScreenState extends State<WebViewScreen>
           }
         },
       )
+      ..addJavaScriptChannel(
+        'FlutterAuth',
+        onMessageReceived: (JavaScriptMessage message) async {
+          // Handle login success notification from web page
+          if (message.message == 'loginSuccess') {
+            widget.onAuthSuccess?.call();
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          }
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
