@@ -116,15 +116,30 @@ class _WebViewScreenState extends State<WebViewScreen>
             ''');
 
             // Check if user successfully logged in or registered
-            // Check for dashboard, home, or any success redirect
-            if (url.contains('/dashboard') ||
-                url.contains('/home') ||
-                url.contains('/wallet') ||
-                url.contains('/transactions')) {
-              widget.onAuthSuccess?.call();
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
+            // The webapp is a SPA, so check for dashboard URLs
+            if (url.contains('/dashboard')) {
+              // Wait a bit for SPA to initialize, then check if content loaded
+              Future.delayed(const Duration(milliseconds: 500), () async {
+                try {
+                  // Check if dashboard content is loaded (SPA architecture)
+                  final result = await _controller.runJavaScriptReturningResult(
+                      'document.getElementById("dashboardContent") !== null');
+
+                  if (result.toString() == 'true') {
+                    // Dashboard loaded successfully
+                    widget.onAuthSuccess?.call();
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  }
+                } catch (e) {
+                  // If check fails, assume success anyway since we're on dashboard URL
+                  widget.onAuthSuccess?.call();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                }
+              });
             }
           },
           onWebResourceError: (WebResourceError error) {
