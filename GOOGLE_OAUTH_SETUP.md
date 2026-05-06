@@ -27,34 +27,34 @@ B5:C1:24:8F:5A:A8:77:D7:73:A8:6C:F8:B9:51:2C:8C:CD:75:32:D8
 
 ## Google Cloud Console Setup Steps
 
-### 1. Create Android OAuth Client ID
+### 1. Create Android OAuth Client ID ✅ COMPLETED
 
-1. Go to: https://console.cloud.google.com/apis/credentials
-2. Select your SafeRemit project
-3. Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
-4. Configure:
-   - **Application type**: Android
-   - **Name**: SafeRemit Android (Debug)
-   - **Package name**: `finance.saferemit.saferemit_mobile`
-   - **SHA-1 certificate fingerprint**: `B5:C1:24:8F:5A:A8:77:D7:73:A8:6C:F8:B9:51:2C:8C:CD:75:32:D8`
-5. Click **CREATE**
-
-### 2. Get Your Web Client ID
-
-You need your **Web Client ID** (the one you're already using for web OAuth) to add to the Flutter app.
-
-Find it at: https://console.cloud.google.com/apis/credentials
-
-It looks like: `XXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com`
-
-### 3. Update Flutter Code
-
-In `saferemit_mobile/lib/services/auth_service.dart`, replace:
-```dart
-serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+**Android Client ID** (for app authentication):
+```
+400743682454-4vj7okp70dggf19vhojdpgo18ekp2g3m.apps.googleusercontent.com
 ```
 
-With your actual Web Client ID.
+This was created with:
+- **Application type**: Android
+- **Name**: SafeRemit Android (Debug)
+- **Package name**: `finance.saferemit.saferemit_mobile`
+- **SHA-1 certificate fingerprint**: `B5:C1:24:8F:5A:A8:77:D7:73:A8:6C:F8:B9:51:2C:8C:CD:75:32:D8`
+
+### 2. Web Client ID (Already Configured) ✅
+
+**Web Client ID** (for backend token verification):
+```
+400743682454-44mopbbkc524e8s45ps4tik0nj7qa0mk.apps.googleusercontent.com
+```
+
+This is already added to:
+- Flutter app: `lib/services/auth_service.dart` (as `serverClientId`)
+- Backend: `.env` file (as `GOOGLE_CLIENT_ID`)
+
+**Important Notes**: 
+- The **Android Client ID** allows the app to request Google Sign-In
+- The **Web Client ID** is used by the backend to verify the ID tokens
+- OAuth access is currently restricted to test users listed on your OAuth consent screen
 
 ---
 

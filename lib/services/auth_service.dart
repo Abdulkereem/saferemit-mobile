@@ -7,9 +7,9 @@ class AuthService {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    // Add your Web Client ID here (from Google Cloud Console)
-    // This is needed for backend token verification
-    serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+    // Web Client ID for backend token verification
+    serverClientId:
+        '400743682454-44mopbbkc524e8s45ps4tik0nj7qa0mk.apps.googleusercontent.com',
   );
 
   // Google Sign In
