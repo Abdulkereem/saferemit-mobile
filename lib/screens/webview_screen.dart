@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import '../services/auth_service.dart';
+import 'error_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -26,7 +27,8 @@ class _WebViewScreenState extends State<WebViewScreen>
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
-  String _errorMessage = '';
+  ErrorType _errorType = ErrorType.generic;
+  String? _customErrorMessage;
   String _debugMessage = ''; // For debugging
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -302,7 +304,14 @@ class _WebViewScreenState extends State<WebViewScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: _hasError ? _buildErrorScreen() : _buildWebView(),
+        body: _hasError
+            ? ErrorScreen(
+                errorType: _errorType,
+                customMessage: _customErrorMessage,
+                onRetry: _retry,
+                showBackButton: true,
+              )
+            : _buildWebView(),
       ),
     );
   }
@@ -361,150 +370,4 @@ class _WebViewScreenState extends State<WebViewScreen>
     );
   }
 
-  Widget _buildErrorScreen() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFFF5F3EE),
-            Colors.white,
-          ],
-        ),
-      ),
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Animated error icon
-                TweenAnimationBuilder(
-                  duration: const Duration(milliseconds: 600),
-                  tween: Tween<double>(begin: 0, end: 1),
-                  builder: (context, double value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.cloud_off_rounded,
-                          size: 60,
-                          color: Colors.red.shade400,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 40),
-
-                // Error title
-                const Text(
-                  'Connection Problem',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A3A52),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 16),
-
-                // Error message
-                Text(
-                  _errorMessage,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[700],
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 48),
-
-                // Retry button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _retry,
-                    icon: const Icon(Icons.refresh_rounded, size: 24),
-                    label: const Text(
-                      'Try Again',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3A52),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Go back button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                    label: const Text(
-                      'Go Back',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1A3A52),
-                      side: const BorderSide(
-                        color: Color(0xFF1A3A52),
-                        width: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Help text
-                Text(
-                  'If the problem persists, please contact support',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
