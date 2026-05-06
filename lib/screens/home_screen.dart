@@ -49,17 +49,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _navigateToAuth(String type) {
+    // Open WebView directly - user will login and stay in WebView
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => WebViewScreen(
           url: 'https://saferemit.finance/auth/$type',
           title: type == 'login' ? 'Sign In' : 'Sign Up',
           onAuthSuccess: () async {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('isLoggedIn', true);
-            setState(() {
-              _isLoggedIn = true;
-            });
+            // This callback is not really needed anymore
+            // User stays in WebView after login
           },
         ),
       ),

@@ -80,23 +80,12 @@ class _WebViewScreenState extends State<WebViewScreen>
       ..addJavaScriptChannel(
         'FlutterAuth',
         onMessageReceived: (JavaScriptMessage message) async {
-          // Handle login success notification from web page
+          // Just log the message, don't close WebView
           setState(() {
             _debugMessage = 'Received: ${message.message}';
           });
 
-          if (message.message == 'loginSuccess') {
-            setState(() {
-              _debugMessage = 'Login success! Closing WebView...';
-            });
-
-            await Future.delayed(const Duration(milliseconds: 300));
-
-            widget.onAuthSuccess?.call();
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          }
+          // User should stay in WebView to see the web dashboard
         },
       )
       ..setNavigationDelegate(
@@ -111,7 +100,7 @@ class _WebViewScreenState extends State<WebViewScreen>
           onPageFinished: (String url) {
             setState(() {
               _isLoading = false;
-              _debugMessage = 'Page loaded';
+              _debugMessage = 'Page loaded: $url';
             });
 
             // Inject JavaScript to intercept Google OAuth button clicks
@@ -128,19 +117,8 @@ class _WebViewScreenState extends State<WebViewScreen>
               })();
             ''');
 
-            // Simple and reliable: if URL is dashboard, close after 1 second
-            if (url.contains('/dashboard')) {
-              setState(() {
-                _debugMessage = 'Dashboard detected! Closing...';
-              });
-
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (mounted) {
-                  widget.onAuthSuccess?.call();
-                  Navigator.of(context).pop();
-                }
-              });
-            }
+            // DON'T close WebView - let user stay in the web dashboard!
+            // The WebView IS the dashboard - user should see the full webapp
           },
           onWebResourceError: (WebResourceError error) {
             print('WebView Error: ${error.errorCode} - ${error.description}');
