@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -32,6 +33,8 @@ class _WebViewScreenState extends State<WebViewScreen>
   void initState() {
     super.initState();
     _setupAnimation();
+    // Hide status bar for immersive experience
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _initializeWebView();
   }
 
@@ -132,6 +135,8 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   @override
   void dispose() {
+    // Restore status bar when leaving WebView
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _animationController.dispose();
     super.dispose();
   }
@@ -169,7 +174,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animated Logo
+            // Animated Logo (Breathing effect)
             ScaleTransition(
               scale: _scaleAnimation,
               child: Image.asset(
@@ -177,29 +182,6 @@ class _WebViewScreenState extends State<WebViewScreen>
                 width: 120,
                 height: 120,
                 fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Loading indicator
-            const SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3A52)),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Loading text
-            const Text(
-              'Loading...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF8B8680),
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],
