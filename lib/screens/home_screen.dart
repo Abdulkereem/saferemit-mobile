@@ -119,300 +119,307 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildWelcome() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFFF5F3EE),
-            const Color(0xFFFFFFFF),
+            Color(0xFFF5F3EE),
+            Color(0xFFFFFFFF),
           ],
         ),
       ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Orbiting Logo with Icons
-              SizedBox(
-                width: 280,
-                height: 280,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Orbiting icons
-                    AnimatedBuilder(
-                      animation: _orbitController,
-                      builder: (context, child) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Bitcoin
-                            _buildOrbitingIcon(
-                              '₿',
-                              0,
-                              _orbitController.value,
-                              const Color(0xFFF7931A),
-                            ),
-                            // Ethereum
-                            _buildOrbitingIcon(
-                              'Ξ',
-                              1,
-                              _orbitController.value,
-                              const Color(0xFF627EEA),
-                            ),
-                            // USDT
-                            _buildOrbitingIcon(
-                              '\$',
-                              2,
-                              _orbitController.value,
-                              const Color(0xFF26A17B),
-                            ),
-                            // Gift Card
-                            _buildOrbitingIcon(
-                              '🎁',
-                              3,
-                              _orbitController.value,
-                              const Color(0xFFE85D5D),
-                            ),
-                            // Amazon
-                            _buildOrbitingIcon(
-                              'A',
-                              4,
-                              _orbitController.value,
-                              const Color(0xFFFF9900),
-                            ),
-                            // iTunes
-                            _buildOrbitingIcon(
-                              '♪',
-                              5,
-                              _orbitController.value,
-                              const Color(0xFFFA243C),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 20),
 
-                    // Center Logo with scale animation
-                    TweenAnimationBuilder(
-                      duration: const Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      const Color(0xFF1A3A52).withOpacity(0.1),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.all(20),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Welcome text with animation
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 600),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Welcome to SafeRemit',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A3A52),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Description with animation
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Text(
-                  'Convert your gift cards and crypto to cash instantly',
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: Colors.grey[700],
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              const SizedBox(height: 60),
-
-              // Google Sign In button
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 900),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: OutlinedButton.icon(
-                    onPressed: _signInWithGoogle,
-                    icon: Image.network(
-                      'https://www.google.com/favicon.ico',
-                      width: 24,
-                      height: 24,
-                    ),
-                    label: const Text(
-                      'Continue with Google',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                // Orbiting Logo with Icons
+                SizedBox(
+                  width: 280,
+                  height: 280,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Orbiting icons
+                      AnimatedBuilder(
+                        animation: _orbitController,
+                        builder: (context, child) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Bitcoin
+                              _buildOrbitingIcon(
+                                '₿',
+                                0,
+                                _orbitController.value,
+                                const Color(0xFFF7931A),
+                              ),
+                              // Ethereum
+                              _buildOrbitingIcon(
+                                'Ξ',
+                                1,
+                                _orbitController.value,
+                                const Color(0xFF627EEA),
+                              ),
+                              // USDT
+                              _buildOrbitingIcon(
+                                '\$',
+                                2,
+                                _orbitController.value,
+                                const Color(0xFF26A17B),
+                              ),
+                              // Gift Card
+                              _buildOrbitingIcon(
+                                '🎁',
+                                3,
+                                _orbitController.value,
+                                const Color(0xFFE85D5D),
+                              ),
+                              // Amazon
+                              _buildOrbitingIcon(
+                                'A',
+                                4,
+                                _orbitController.value,
+                                const Color(0xFFFF9900),
+                              ),
+                              // iTunes
+                              _buildOrbitingIcon(
+                                '♪',
+                                5,
+                                _orbitController.value,
+                                const Color(0xFFFA243C),
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1A3A52),
-                      side: const BorderSide(
-                        color: Color(0xFFE0E0E0),
-                        width: 2,
+
+                      // Center Logo with scale animation
+                      TweenAnimationBuilder(
+                        duration: const Duration(milliseconds: 800),
+                        tween: Tween<double>(begin: 0, end: 1),
+                        builder: (context, double value, child) {
+                          return Transform.scale(
+                            scale: value,
+                            child: Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF1A3A52)
+                                        .withValues(alpha: 0.1),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 40),
 
-              // Sign In button with animation
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 1000),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: () => _navigateToAuth('login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3A52),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shadowColor: const Color(0xFF1A3A52).withOpacity(0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                // Welcome text with animation
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 600),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: child,
                       ),
+                    );
+                  },
+                  child: const Text(
+                    'Welcome to SafeRemit',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A3A52),
                     ),
-                    child: const Text(
-                      'Sign In',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Description with animation
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'Convert your gift cards and crypto to cash instantly',
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: Colors.grey[700],
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 60),
+
+                // Google Sign In button
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 900),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: OutlinedButton.icon(
+                      onPressed: _signInWithGoogle,
+                      icon: Image.network(
+                        'https://www.google.com/favicon.ico',
+                        width: 24,
+                        height: 24,
+                      ),
+                      label: const Text(
+                        'Continue with Google',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1A3A52),
+                        side: const BorderSide(
+                          color: Color(0xFFE0E0E0),
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Sign Up button with animation
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 1200),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: OutlinedButton(
-                    onPressed: () => _navigateToAuth('register'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1A3A52),
-                      side: const BorderSide(
-                        color: Color(0xFF1A3A52),
-                        width: 2,
+                // Sign In button with animation
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 1000),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                    );
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToAuth('login'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A3A52),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shadowColor:
+                            const Color(0xFF1A3A52).withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+
+                // Sign Up button with animation
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 1200),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: OutlinedButton(
+                      onPressed: () => _navigateToAuth('register'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1A3A52),
+                        side: const BorderSide(
+                          color: Color(0xFF1A3A52),
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -481,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildOrbitingIcon(
       String icon, int index, double progress, Color color) {
     final double angle = (progress * 2 * math.pi) + (index * math.pi / 3);
-    final double radius = 120;
+    const double radius = 120;
     final double x = radius * math.cos(angle);
     final double y = radius * math.sin(angle);
 
@@ -520,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 10,
               spreadRadius: 2,
             ),
