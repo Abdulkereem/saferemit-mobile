@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import '../services/auth_service.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -66,6 +67,15 @@ class _WebViewScreenState extends State<WebViewScreen>
     _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
+      ..addJavaScriptChannel(
+        'FlutterGoogleAuth',
+        onMessageReceived: (JavaScriptMessage message) async {
+          // Handle native Google Sign-In when button is clicked in WebView
+          if (message.message == 'signInWithGoogle') {
+            await _handleNativeGoogleSignIn();
+          }
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -78,6 +88,20 @@ class _WebViewScreenState extends State<WebViewScreen>
             setState(() {
               _isLoading = false;
             });
+
+            // Inject JavaScript to intercept Google OAuth button clicks
+            _controller.runJavaScript('''
+              (function() {
+                var googleBtn = document.getElementById('googleOAuthBtn');
+                if (googleBtn) {
+                  googleBtn.onclick = function(e) {
+                    e.preventDefault();
+                    FlutterGoogleAuth.postMessage('signInWithGoogle');
+                    return false;
+                  };
+                }
+              })();
+            ''');
 
             // Check if user successfully logged in or registered
             if (url.contains('/dashboard')) {
@@ -108,7 +132,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         ..setMediaPlaybackRequiresUserGesture(false)
         ..setGeolocationPermissionsPromptCallbacks(
           onShowPrompt: (request) async {
-            return GeolocationPermissionsResponse(
+            return const GeolocationPermissionsResponse(
               allow: true,
               retain: true,
             );
@@ -123,6 +147,60 @@ class _WebViewScreenState extends State<WebViewScreen>
         'Cache-Control': 'no-cache',
       },
     );
+  }
+
+  Future<void> _handleNativeGoogleSignIn() async {
+    try {
+      // Show loading indicator
+      setState(() {
+        _isLoading = true;
+      });
+
+      final authService = AuthService();
+      final result = await authService.signInWithGoogle();
+
+      if (result['success']) {
+        // Store session token
+        final token = result['token'];
+
+        // Inject session into WebView and redirect to dashboard
+        await _controller.runJavaScript('''
+          localStorage.setItem('auth_token', '$token');
+          window.location.href = '/dashboard';
+        ''');
+
+        // Success callback
+        widget.onAuthSuccess?.call();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else {
+        // Show error
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Google Sign-In failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _retry() {
