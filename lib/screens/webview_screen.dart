@@ -28,8 +28,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   bool _isLoading = true;
   bool _hasError = false;
   ErrorType _errorType = ErrorType.generic;
-  String? _customErrorMessage;
-  String _debugMessage = ''; // For debugging
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -37,7 +35,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   void initState() {
     super.initState();
     _setupAnimation();
-    // Hide status bar for immersive experience
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _initializeWebView();
   }
@@ -73,39 +70,29 @@ class _WebViewScreenState extends State<WebViewScreen>
       ..addJavaScriptChannel(
         'FlutterGoogleAuth',
         onMessageReceived: (JavaScriptMessage message) async {
-          // Handle native Google Sign-In when button is clicked in WebView
           if (message.message == 'signInWithGoogle') {
             await _handleNativeGoogleSignIn();
           }
         },
       )
-      ..addJavaScriptChannel(
-        'FlutterAuth',
-        onMessageReceived: (JavaScriptMessage message) async {
-          // Just log the message, don't close WebView
-          setState(() {
-            _debugMessage = 'Received: ${message.message}';
-          });
-
-          // User should stay in WebView to see the web dashboard
-        },
-      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-              _hasError = false;
-              _debugMessage = 'Loading...';
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+                _hasError = false;
+              });
+            }
           },
           onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-              _debugMessage = 'Page loaded: $url';
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
 
-            // Inject JavaScript to intercept Google OAuth button clicks
+            // Inject JavaScript for Google OAuth button
             _controller.runJavaScript('''
               (function() {
                 var googleBtn = document.getElementById('googleOAuthBtn');
@@ -118,74 +105,27 @@ class _WebViewScreenState extends State<WebViewScreen>
                 }
               })();
             ''');
-
-            // DON'T close WebView - let user stay in the web dashboard!
-            // The WebView IS the dashboard - user should see the full webapp
           },
           onWebResourceError: (WebResourceError error) {
-            // Intercept ALL errors and show custom Flutter error screen
-            // Never show browser error pages
+            // Only handle MAIN FRAME errors (not images, scripts, etc.)
+            if (error.isForMainFrame == true) {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _hasError = true;
 
-            // Only handle main frame errors (not images, scripts, etc.)
-            if (error.isForMainFrame ?? false) {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-
-                // Categorize errors and show appropriate messages
-                if (error.errorCode == -2) {
-                  // ERR_INTERNET_DISCONNECTED
-                  _errorMessage =
-                      'No internet connection. Please check your network and try again.';
-                } else if (error.errorCode == -6) {
-                  // ERR_CONNECTION_REFUSED
-                  _errorMessage =
-                      'Unable to connect to SafeRemit. Please try again later.';
-                } else if (error.errorCode == -8) {
-                  // ERR_TIMED_OUT
-                  _errorMessage =
-                      'Connection timed out. Please check your internet and try again.';
-                } else if (error.errorCode == -105) {
-                  // ERR_NAME_NOT_RESOLVED
-                  _errorMessage =
-                      'Cannot reach SafeRemit servers. Please check your internet connection.';
-                } else if (error.errorCode >= 400 && error.errorCode < 500) {
-                  // Client errors (404, 403, etc.)
-                  _errorMessage =
-                      'Page not found. Please try again or contact support.';
-                } else if (error.errorCode >= 500) {
-                  // Server errors
-                  _errorMessage =
-                      'SafeRemit is temporarily unavailable. Please try again in a few moments.';
-                } else {
-                  // Generic error
-                  _errorMessage =
-                      'Something went wrong. Please check your connection and try again.';
-                }
-              });
-            }
-          },
-          onHttpError: (HttpResponseError error) {
-            // Handle HTTP errors (404, 500, etc.)
-            if (error.response?.statusCode != null) {
-              final statusCode = error.response!.statusCode!;
-
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-
-                if (statusCode >= 500) {
-                  _errorMessage =
-                      'SafeRemit is temporarily unavailable. Our team is working on it.';
-                } else if (statusCode == 404) {
-                  _errorMessage =
-                      'Page not found. Please go back and try again.';
-                } else if (statusCode == 403) {
-                  _errorMessage = 'Access denied. Please log in again.';
-                } else {
-                  _errorMessage = 'Unable to load page. Please try again.';
-                }
-              });
+                  // Categorize error
+                  if (error.errorCode == -2 || error.errorCode == -105) {
+                    _errorType = ErrorType.noInternet;
+                  } else if (error.errorCode == -8) {
+                    _errorType = ErrorType.timeout;
+                  } else if (error.errorCode == -6) {
+                    _errorType = ErrorType.serverDown;
+                  } else {
+                    _errorType = ErrorType.generic;
+                  }
+                });
+              }
             }
           },
         ),
@@ -206,25 +146,15 @@ class _WebViewScreenState extends State<WebViewScreen>
         );
     }
 
-    // Suppress WebView's default error pages
-    // We handle all errors with custom Flutter screens
-    _controller.setOnConsoleMessage((message) {
-      // Optionally log console messages for debugging
-      // print('WebView Console: ${message.message}');
-    });
-
     // Load URL
     _controller.loadRequest(
       Uri.parse(widget.url),
-      headers: {
-        'Cache-Control': 'no-cache',
-      },
+      headers: {'Cache-Control': 'no-cache'},
     );
   }
 
   Future<void> _handleNativeGoogleSignIn() async {
     try {
-      // Show loading indicator
       setState(() {
         _isLoading = true;
       });
@@ -233,22 +163,12 @@ class _WebViewScreenState extends State<WebViewScreen>
       final result = await authService.signInWithGoogle();
 
       if (result['success']) {
-        // Store session token
         final token = result['token'];
-
-        // Inject session into WebView and redirect to dashboard
         await _controller.runJavaScript('''
           localStorage.setItem('auth_token', '$token');
           window.location.href = '/dashboard';
         ''');
-
-        // Success callback
-        widget.onAuthSuccess?.call();
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
       } else {
-        // Show error
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -286,7 +206,6 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   @override
   void dispose() {
-    // Restore status bar when leaving WebView
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _animationController.dispose();
     super.dispose();
@@ -294,34 +213,33 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async {
+        if (didPop) return;
         if (await _controller.canGoBack()) {
           _controller.goBack();
-          return false;
+        } else {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
         body: _hasError
             ? ErrorScreen(
                 errorType: _errorType,
-                customMessage: _customErrorMessage,
                 onRetry: _retry,
                 showBackButton: true,
               )
-            : _buildWebView(),
+            : Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  if (_isLoading) _buildLoadingOverlay(),
+                ],
+              ),
       ),
-    );
-  }
-
-  Widget _buildWebView() {
-    return Stack(
-      children: [
-        WebViewWidget(controller: _controller),
-        if (_isLoading) _buildLoadingOverlay(),
-      ],
     );
   }
 
@@ -329,45 +247,16 @@ class _WebViewScreenState extends State<WebViewScreen>
     return Container(
       color: Colors.white,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated Logo (Breathing effect)
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
-              ),
-            ),
-
-            // Debug message
-            if (_debugMessage.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 24.0),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _debugMessage,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 120,
+            height: 120,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
   }
-
 }
