@@ -27,6 +27,7 @@ class _WebViewScreenState extends State<WebViewScreen>
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  String _debugMessage = ''; // For debugging
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -80,7 +81,17 @@ class _WebViewScreenState extends State<WebViewScreen>
         'FlutterAuth',
         onMessageReceived: (JavaScriptMessage message) async {
           // Handle login success notification from web page
+          setState(() {
+            _debugMessage = 'Received: ${message.message}';
+          });
+
           if (message.message == 'loginSuccess') {
+            setState(() {
+              _debugMessage = 'Login success! Closing WebView...';
+            });
+
+            await Future.delayed(const Duration(milliseconds: 300));
+
             widget.onAuthSuccess?.call();
             if (mounted) {
               Navigator.of(context).pop();
@@ -94,11 +105,13 @@ class _WebViewScreenState extends State<WebViewScreen>
             setState(() {
               _isLoading = true;
               _hasError = false;
+              _debugMessage = 'Loading...';
             });
           },
           onPageFinished: (String url) {
             setState(() {
               _isLoading = false;
+              _debugMessage = 'Page loaded';
             });
 
             // Inject JavaScript to intercept Google OAuth button clicks
@@ -115,29 +128,16 @@ class _WebViewScreenState extends State<WebViewScreen>
               })();
             ''');
 
-            // Check if user successfully logged in or registered
-            // The webapp is a SPA, so check for dashboard URLs
+            // Simple and reliable: if URL is dashboard, close after 1 second
             if (url.contains('/dashboard')) {
-              // Wait a bit for SPA to initialize, then check if content loaded
-              Future.delayed(const Duration(milliseconds: 500), () async {
-                try {
-                  // Check if dashboard content is loaded (SPA architecture)
-                  final result = await _controller.runJavaScriptReturningResult(
-                      'document.getElementById("dashboardContent") !== null');
+              setState(() {
+                _debugMessage = 'Dashboard detected! Closing...';
+              });
 
-                  if (result.toString() == 'true') {
-                    // Dashboard loaded successfully
-                    widget.onAuthSuccess?.call();
-                    if (mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  }
-                } catch (e) {
-                  // If check fails, assume success anyway since we're on dashboard URL
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                if (mounted) {
                   widget.onAuthSuccess?.call();
-                  if (mounted) {
-                    Navigator.of(context).pop();
-                  }
+                  Navigator.of(context).pop();
                 }
               });
             }
@@ -295,6 +295,28 @@ class _WebViewScreenState extends State<WebViewScreen>
                 fit: BoxFit.contain,
               ),
             ),
+
+            // Debug message
+            if (_debugMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 24.0),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _debugMessage,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
