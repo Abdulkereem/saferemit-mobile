@@ -35,7 +35,14 @@ class _WebViewScreenState extends State<WebViewScreen>
   void initState() {
     super.initState();
     _setupAnimation();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ));
     _initializeWebView();
   }
 
@@ -244,9 +251,10 @@ class _WebViewScreenState extends State<WebViewScreen>
               )
             : Stack(
                 children: [
-                  // Add padding to WebView for system navigation bar
+                  // Pad WebView so system bars (status + nav) don't cover web content
                   Padding(
                     padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top,
                       bottom: MediaQuery.of(context).padding.bottom,
                     ),
                     child: WebViewWidget(controller: _controller),
