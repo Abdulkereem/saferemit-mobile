@@ -218,20 +218,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildLogo() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final logoSize = (screenWidth * 0.38).clamp(140.0, 210.0);
+
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         final t = _pulseController.value;
         return Container(
-          width: 210,
-          height: 210,
+          width: logoSize,
+          height: logoSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFF4C044).withOpacity(0.06 + t * 0.16),
-                blurRadius: 36 + t * 28,
-                spreadRadius: 6 + t * 10,
+                blurRadius: logoSize * 0.17 + t * logoSize * 0.13,
+                spreadRadius: logoSize * 0.03 + t * logoSize * 0.05,
               ),
               BoxShadow(
                 color: const Color(0xFF1A2740).withOpacity(0.03 + t * 0.05),
@@ -241,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           child: Container(
-            margin: const EdgeInsets.all(32),
+            margin: EdgeInsets.all(logoSize * 0.15),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -253,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(logoSize * 0.11),
             child: Image.asset(
               'assets/images/logo.png',
               fit: BoxFit.contain,
