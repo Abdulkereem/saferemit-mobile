@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build & Sign AAB
+  build-and-deploy:
+    name: Build, Sign & Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -29,17 +29,21 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Get dependencies
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Get Flutter dependencies
         run: |
           flutter clean
           flutter pub get
 
-      # Decode the keystore from the GitHub secret and write it to disk
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/saferemit-release.jks
 
-      # Write key.properties so build.gradle.kts can find signing config
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOF
@@ -59,12 +63,7 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
-      # Deploy to Play Store internal track
-      - name: Deploy to Play Store (internal track)
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          packageName: finance.saferemit.saferemit_mobile
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal
-          status: completed
+      - name: Deploy via Fastlane
+        env:
+          PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
+        run: bundle exec fastlane deploy
