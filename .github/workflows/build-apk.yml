@@ -60,13 +60,11 @@ jobs:
           retention-days: 30
 
       # Deploy to Play Store internal track
-      # Requires PLAY_STORE_JSON_KEY secret (Google Play service account JSON)
       - name: Deploy to Play Store (internal track)
-        if: ${{ secrets.PLAY_STORE_JSON_KEY != '' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: finance.saferemit.saferemit_mobile
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: internal
-          status: draft
+          status: completed
