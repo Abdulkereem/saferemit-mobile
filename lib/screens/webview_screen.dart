@@ -178,12 +178,19 @@ class _WebViewScreenState extends State<WebViewScreen>
       final authService = AuthService();
       final result = await authService.signInWithGoogle();
 
-      if (result['success']) {
-        final token = result['token'];
-        await _controller.runJavaScript('''
-          localStorage.setItem('auth_token', '$token');
-          window.location.href = '/dashboard';
-        ''');
+      if (result['success'] == true) {
+        final sessionToken = result['session_token'] as String? ?? '';
+
+        if (sessionToken.isEmpty) {
+          throw Exception('No session token returned from server');
+        }
+
+        // Navigate the WebView to the handoff route. The server sets the
+        // Flask session cookie on this response (WebView context), logging
+        // the user in, then redirects them to the dashboard.
+        await _controller.runJavaScript(
+          "window.location.href = '/auth/mobile-session/$sessionToken';",
+        );
       } else {
         if (mounted) {
           setState(() {

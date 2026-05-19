@@ -7,6 +7,9 @@ class AuthService {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    // serverClientId tells Google to issue an id_token whose audience
+    // is the web client ID — so the backend can verify it with GOOGLE_CLIENT_ID.
+    serverClientId: '400743682454-44mopbbkc524e8s45ps4tik0nj7qa0mk.apps.googleusercontent.com',
   );
 
   // Google Sign In
@@ -45,8 +48,8 @@ class AuthService {
         final data = jsonDecode(response.body);
         return {
           'success': true,
+          'session_token': data['session_token'] ?? '',
           'user': data['user'],
-          'token': data['token'] ?? '',
         };
       } else {
         final errorData = jsonDecode(response.body);
