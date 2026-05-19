@@ -3,7 +3,6 @@ default_platform(:android)
 platform :android do
   desc "Deploy to Play Store internal track"
   lane :deploy do
-    # Check if screenshots exist
     screenshots_dir = "fastlane/metadata/android/en-US/images/phoneScreenshots"
     has_screenshots = Dir.glob("#{screenshots_dir}/*.{png,jpg,jpeg}").any?
 
@@ -11,9 +10,10 @@ platform :android do
     has_feature = Dir.glob("#{feature_dir}/*.{png,jpg,jpeg}").any?
 
     upload_to_play_store(
+      package_name: "finance.saferemit.saferemit_mobile",
+      json_key_data: ENV["PLAY_STORE_JSON_KEY"],
       track: "internal",
       aab: "build/app/outputs/bundle/release/app-release.aab",
-      json_key_data: ENV["PLAY_STORE_JSON_KEY"],
       skip_upload_apk: true,
       skip_upload_metadata: false,
       skip_upload_changelogs: false,
