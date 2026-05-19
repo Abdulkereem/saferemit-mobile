@@ -50,7 +50,7 @@ jobs:
           storePassword=${{ secrets.STORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=app/saferemit-release.jks
+          storeFile=saferemit-release.jks
           EOF
 
       - name: Build release AAB
