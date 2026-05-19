@@ -1,4 +1,4 @@
-name: Build Flutter APK
+name: Build & Deploy to Play Store
 
 on:
   push:
@@ -8,9 +8,9 @@ on:
 
 jobs:
   build:
-    name: Build APK
+    name: Build & Sign AAB
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -27,30 +27,46 @@ jobs:
         with:
           flutter-version: '3.24.5'
           channel: 'stable'
+          cache: true
 
       - name: Get dependencies
         run: |
           flutter clean
           flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      # Decode the keystore from the GitHub secret and write it to disk
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/saferemit-release.jks
 
-      - name: Upload APK
+      # Write key.properties so build.gradle.kts can find signing config
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=app/saferemit-release.jks
+          EOF
+
+      - name: Build release AAB
+        run: flutter build appbundle --release
+
+      - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: saferemit-mobile-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: saferemit-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
-      - name: Create Release Info
-        run: |
-          echo "✅ APK built successfully!" > release-info.txt
-          echo "Build Date: $(date)" >> release-info.txt
-          echo "Commit: ${{ github.sha }}" >> release-info.txt
-
-      - name: Upload Release Info
-        uses: actions/upload-artifact@v4
+      # Deploy to Play Store internal track
+      # Requires PLAY_STORE_JSON_KEY secret (Google Play service account JSON)
+      - name: Deploy to Play Store (internal track)
+        if: ${{ secrets.PLAY_STORE_JSON_KEY != '' }}
+        uses: r0adkll/upload-google-play@v1
         with:
-          name: release-info
-          path: release-info.txt
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          packageName: finance.saferemit.saferemit_mobile
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
