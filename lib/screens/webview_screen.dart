@@ -105,6 +105,28 @@ class _WebViewScreenState extends State<WebViewScreen>
               });
             }
 
+            // Ensure native styling is applied (belt-and-suspenders alongside inline CSS detection)
+            _controller.runJavaScript('''
+              (function() {
+                document.documentElement.classList.add('wv');
+
+                // Force system font if CSS class wasn't applied before first paint
+                if (!document.getElementById('_wv_style')) {
+                  var s = document.createElement('style');
+                  s.id = '_wv_style';
+                  s.textContent = [
+                    'html.wv,html.wv body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Roboto","Google Sans",system-ui,sans-serif!important}',
+                    'html.wv ::-webkit-scrollbar{display:none}',
+                    'html.wv *{scrollbar-width:none;-webkit-touch-callout:none}',
+                    'html.wv :not(input):not(textarea):not([contenteditable]){-webkit-user-select:none;user-select:none}',
+                    'html.wv input,html.wv textarea{-webkit-user-select:text;user-select:text}',
+                    'html.wv input,html.wv textarea,html.wv select,html.wv button{-webkit-appearance:none;appearance:none;font-family:inherit}'
+                  ].join('');
+                  document.head.appendChild(s);
+                }
+              })();
+            ''');
+
             // Inject JavaScript for Google OAuth button
             _controller.runJavaScript('''
               (function() {
