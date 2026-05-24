@@ -26,6 +26,7 @@ class _WebViewScreenState extends State<WebViewScreen>
     with SingleTickerProviderStateMixin {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _initialLoadDone = false; // after first page finishes, suppress loader
   bool _hasError = false;
   ErrorType _errorType = ErrorType.generic;
   late AnimationController _animationController;
@@ -92,7 +93,9 @@ class _WebViewScreenState extends State<WebViewScreen>
             debugPrint('🌐 WebView: Loading $url');
             if (mounted) {
               setState(() {
-                _isLoading = true;
+                // Only show the splash overlay for the very first load.
+                // Internal dashboard navigation should feel instant.
+                if (!_initialLoadDone) _isLoading = true;
                 _hasError = false;
               });
             }
@@ -102,6 +105,7 @@ class _WebViewScreenState extends State<WebViewScreen>
             if (mounted) {
               setState(() {
                 _isLoading = false;
+                _initialLoadDone = true;
               });
             }
 

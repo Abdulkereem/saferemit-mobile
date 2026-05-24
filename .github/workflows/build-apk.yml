@@ -53,6 +53,15 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/saferemit-release.jks
 
+      - name: Print release keystore SHA-1
+        run: |
+          keytool -list -v \
+            -alias "${{ secrets.KEY_ALIAS }}" \
+            -keystore android/app/saferemit-release.jks \
+            -storepass "${{ secrets.STORE_PASSWORD }}" 2>/dev/null \
+            | grep -A1 "SHA1" || true
+          echo "👆 Register the SHA-1 above in Google Cloud Console → OAuth → Android client"
+
       - name: Create key.properties
         run: |
           cat > android/key.properties <<'EOF'
