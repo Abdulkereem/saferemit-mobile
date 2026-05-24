@@ -75,6 +75,17 @@ jobs:
           retention-days: 30
 
       - name: Deploy via Fastlane
+        continue-on-error: true
         env:
           PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
         run: bundle exec fastlane deploy
+
+      - name: Build result summary
+        run: |
+          echo "================================================"
+          echo "  AAB built and signed successfully"
+          echo "  Download from the Actions artifacts above"
+          echo "  To enable auto-deploy fix Play Console perms:"
+          echo "  Play Console → Setup → API access →"
+          echo "  Grant service account 'Release manager' role"
+          echo "================================================"
