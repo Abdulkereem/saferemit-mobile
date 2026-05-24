@@ -40,18 +40,29 @@ jobs:
           flutter clean
           flutter pub get
 
+      - name: Set version code from run number
+        run: |
+          # Use GitHub run number as ever-increasing version code
+          VERSION_CODE=${{ github.run_number }}
+          # Preserve version name, only bump the build number
+          CURRENT=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          sed -i "s/^version: .*/version: ${CURRENT}+${VERSION_CODE}/" pubspec.yaml
+          echo "Version: ${CURRENT}+${VERSION_CODE}"
+
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/saferemit-release.jks
 
       - name: Create key.properties
         run: |
-          cat > android/key.properties <<EOF
+          cat > android/key.properties <<'EOF'
           storePassword=${{ secrets.STORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=saferemit-release.jks
           EOF
+          # Strip leading whitespace added by heredoc indentation
+          sed -i 's/^[[:space:]]*//' android/key.properties
 
       - name: Build release AAB
         run: flutter build appbundle --release
